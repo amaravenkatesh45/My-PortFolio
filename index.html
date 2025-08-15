@@ -1,29 +1,665 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport"content="width=device-width,initial-scale=1.0">
-        <title>Tic Tac Toe</title>
-        <link rel="stylesheet" href ="style.css">
-        <body>
-            <main>
-                <h1>Tic Tac Toe</h1>
-                <div class="container">
-                    <div class="game">
-                    <button class="box">X</button>
-                    <button class="box">0</button>
-                    <button class="box"></button>
-                    <button class="box"></button>
-                    <button class="box"></button>
-                    <button class="box"></button>
-                    <button class="box"></button>
-                    <button class="box"></button>
-                    <button class="box"></button>
-                    <button id="reset">Reset Game</button>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>K.Amar Venkatesh — Beautiful Full‑Screen Portfolio</title>
+  <meta name="description" content="Full-screen tabbed portfolio for Kongara Amar Venkatesh — Software Developer & ML Enthusiast (Java, Python, Web, CV)." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /*
+    ============================================================================
+    GLOBAL THEME & RESET
+    ============================================================================
+    */
+    :root {
+      --bg: #0b0c10;
+      --surface: #10131a;
+      --panel: #141924;
+      --text: #e8eef7;
+      --muted: #9aa4b2;
+      --brand: #5b9cff;
+      --brand-2: #7cf3c5;
+      --accent: #ffb86b;
+      --danger: #ff6b6b;
+      --ring: rgba(91,156,255,.35);
+      --border: rgba(153, 170, 190, .18);
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius-lg: 22px;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --blur: saturate(120%) blur(10px);
+      --grid-gap: 16px;
+      --nav-h: 64px;
+      --section-pad: 24px;
+    }
+    [data-theme="light"] {
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #4b5563;
+      --brand: #2563eb;
+      --brand-2: #059669;
+      --accent: #b45309;
+      --danger: #dc2626;
+      --ring: rgba(37,99,235,.25);
+      --border: rgba(15, 23, 42, .12);
+      --shadow: 0 20px 60px rgba(2, 6, 23, .08);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text); background: var(--bg);
+      line-height: 1.6; overflow: hidden; /* we handle scroll inside sections */
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font: inherit; color: inherit; }
+    .visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
+
+    /*
+    ============================================================================
+    BACKGROUND CANVAS (soft particles)
+    ============================================================================
+    */
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /*
+    ============================================================================
+    APP LAYOUT
+    ============================================================================
+    */
+    .app { position: relative; z-index: 1; }
+    .topbar {
+      height: var(--nav-h); position: fixed; inset-inline: 0; inset-block-start: 0; z-index: 10;
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding-inline: 14px;
+      backdrop-filter: var(--blur); background: color-mix(in oklab, var(--bg) 82%, transparent);
+      border-block-end: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .3px; }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: 0 0 0 5px var(--ring); }
+    .brand small { color: var(--muted); font-weight: 600; }
+
+    .tabs { display: flex; align-items: center; gap: 8px; justify-self: center; }
+    .tab-btn { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: color-mix(in oklab, var(--panel) 90%, transparent); color: var(--text); cursor: pointer;
+    }
+    .tab-btn[aria-selected="true"] { background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 80%, transparent), var(--panel)); box-shadow: 0 8px 24px rgba(0,0,0,.22); }
+    .tab-btn:focus-visible { outline: none; box-shadow: 0 0 0 6px var(--ring); }
+
+    .actions { display: flex; align-items: center; gap: 10px; justify-self: end; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border);
+      background: color-mix(in oklab, var(--panel) 90%, transparent); cursor: pointer; }
+
+    .view {
+      position: fixed; inset-inline: 0; inset-block: var(--nav-h) 0; /* full height minus topbar */
+      display: grid; grid-template-rows: 1fr; z-index: 1;
+    }
+    .section {
+      display: none; overflow: auto; padding: 28px; scroll-behavior: smooth;
+      background: radial-gradient(1200px 600px at 80% -10%, color-mix(in oklab, var(--brand) 30%, transparent), transparent 60%),
+                  radial-gradient(1000px 500px at -10% 20%, color-mix(in oklab, var(--brand-2) 28%, transparent), transparent 60%);
+    }
+    .section.active { display: block; animation: fadeIn .4s ease; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .container { max-width: 1180px; margin-inline: auto; }
+    .grid { display: grid; gap: var(--grid-gap); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card { background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 85%, transparent), var(--panel));
+      border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow); }
+    .card h3 { margin-block: 0 8px; }
+    .muted { color: var(--muted); }
+
+    .hero { display: grid; grid-template-columns: 1.3fr .7fr; gap: 20px; align-items: center; }
+    .hero h1 { font-size: clamp(28px, 4vw, 48px); line-height: 1.15; margin: 0 0 10px; }
+    .hero p.lead { color: var(--muted); font-size: clamp(14px, 2vw, 18px); }
+    .hero .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-top: 14px; }
+    .kpi { text-align: center; padding: 14px; border-radius: 16px; background: color-mix(in oklab, var(--panel) 85%, transparent); border: 1px solid var(--border); }
+    .kpi b { display: block; font-size: 24px; }
+
+    .badge { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); background: color-mix(in oklab, var(--panel) 90%, transparent); font-size: 12px; }
+
+    .btn { display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--brand); color: white; font-weight: 700; box-shadow: 0 10px 24px rgba(91,156,255,.35); }
+    .btn.secondary { background: transparent; color: var(--text); box-shadow: none; }
+    .btn.ghost { background: transparent; border-style: dashed; }
+    .btn:focus-visible { outline: none; box-shadow: 0 0 0 6px var(--ring); }
+
+    /* Skills grid & meters */
+    .skill { display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 10px; border-radius: 12px; background: color-mix(in oklab, var(--panel) 90%, transparent); border: 1px solid var(--border); }
+    .meter { position:relative; flex:1; height: 10px; border-radius: 999px; background: color-mix(in oklab, var(--panel) 70%, transparent); overflow: hidden; }
+    .meter > i { position:absolute; inset-block: 0; inset-inline-start: 0; background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
+
+    /* Project cards */
+    .project { display:flex; flex-direction:column; gap: 10px; }
+    .project .thumb { aspect-ratio: 16/9; border-radius: 14px; background: #0e1118; position: relative; overflow: hidden; border:1px solid var(--border); }
+    .project .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .project .tags { display:flex; flex-wrap:wrap; gap: 8px; }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 24px; }
+    .timeline::before { content: ""; position:absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(var(--brand), var(--brand-2)); border-radius: 2px; }
+    .t-item { position: relative; padding: 12px 12px 12px 16px; margin-bottom: 10px; background: color-mix(in oklab, var(--panel) 90%, transparent); border: 1px solid var(--border); border-radius: 14px; }
+    .t-item::before { content: ""; position:absolute; left: -7px; top: 16px; width: 12px; height:12px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 4px var(--ring); }
+
+    /* Footer */
+    .footer { text-align:center; color: var(--muted); padding: 18px; }
+
+    /* Search/filter */
+    .search { display:flex; gap: 10px; align-items: center; }
+    .input { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: color-mix(in oklab, var(--panel) 90%, transparent); color: var(--text); outline: none; }
+    .input:focus { box-shadow: 0 0 0 6px var(--ring); border-color: var(--brand); }
+
+    /* Modals */
+    .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.55); z-index: 50; }
+    .modal.open { display: flex; }
+    .modal .dialog { width: min(920px, 92vw); max-height: 88vh; overflow:auto; background: var(--surface); border:1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); padding: 18px; }
+
+    /* Toast */
+    .toast { position: fixed; right: 16px; bottom: 16px; padding: 12px 14px; border-radius: 12px; background: color-mix(in oklab, var(--panel) 90%, transparent); border: 1px solid var(--border); box-shadow: var(--shadow); display:none; }
+    .toast.show { display:block; animation: fadeIn .25s ease; }
+
+    /* Responsive */
+    @media (max-width: 1000px) { .hero { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px) { .tabs { overflow:auto; } .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } .topbar { grid-template-columns: 1fr auto; grid-auto-flow: row; height: auto; gap: 12px; padding-block: 10px; } .actions { justify-self: start; } .view { inset-block-start: calc(var(--nav-h) + 20px); } }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+  <div class="app" id="app">
+    <header class="topbar" role="tablist" aria-label="Main sections">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <div>
+          <div>K. Amar Venkatesh</div>
+          <small>Software Developer · ML Enthusiast</small>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab-btn" role="tab" data-tab="home" aria-selected="true">🏠 Home</button>
+        <button class="tab-btn" role="tab" data-tab="skills">🧠 Skills</button>
+        <button class="tab-btn" role="tab" data-tab="projects">🧩 Projects</button>
+        <button class="tab-btn" role="tab" data-tab="education">🎓 Education</button>
+        <button class="tab-btn" role="tab" data-tab="certs">📜 Certifications</button>
+        <button class="tab-btn" role="tab" data-tab="contact">✉️ Contact</button>
+      </nav>
+      <div class="actions">
+        <button id="themeToggle" class="pill" title="Toggle theme" aria-label="Toggle theme">🌗 Theme</button>
+        <a class="pill" href="/resume1.pdf" download title="Download Resume">⬇️ Résumé</a>
+      </div>
+    </header>
+
+    <main class="view">
+      <!-- ============================= HOME ============================= -->
+      <section id="home" class="section active" role="tabpanel" aria-labelledby="tab-home">
+        <div class="container">
+          <div class="hero">
+            <div class="card">
+              <h1>Hello, I’m Amar — I build clean, reliable software.</h1>
+              <p class="lead">Focused on <b>Java</b>, <b>Python</b>, modern <b>Web</b>, and <b>Computer Vision</b>. I love catching subtle bugs, planning the path, and shipping polished work.</p>
+              <div class="kpis">
+                <div class="kpi"><b>8.54</b>CGPA</div>
+                <div class="kpi"><b>3+</b>Major Projects</div>
+                <div class="kpi"><b>2022–Now</b>CSE @ KARE</div>
+                <div class="kpi"><b>EN·TE·TA</b>Languages</div>
+              </div>
+              <div style="display:flex; gap:10px; margin-top:12px; flex-wrap: wrap;">
+                <span class="badge">📍 Palnadu, Andhra Pradesh</span>
+                <a class="btn" href="#" data-jump="projects">View Projects</a>
+                <a class="btn secondary" href="https://github.com/amarvenkatesh-45" target="_blank" rel="noreferrer">GitHub</a>
+                <a class="btn secondary" href="https://linkedin.com/in/amar-venkatesh-chowdary-kongara" target="_blank" rel="noreferrer">LinkedIn</a>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Quick Bio</h3>
+              <p class="muted">I enjoy robust systems, thoughtful UI, and ML that genuinely helps users. I care about details and stability. Below is a snapshot of what I use daily.</p>
+              <div class="grid grid-2" style="margin-top:10px;">
+                <div class="skill"><span>Java</span><div class="meter"><i style="width:86%"></i></div></div>
+                <div class="skill"><span>Python</span><div class="meter"><i style="width:84%"></i></div></div>
+                <div class="skill"><span>JavaScript</span><div class="meter"><i style="width:78%"></i></div></div>
+                <div class="skill"><span>SQL</span><div class="meter"><i style="width:80%"></i></div></div>
+                <div class="skill"><span>OpenCV</span><div class="meter"><i style="width:72%"></i></div></div>
+                <div class="skill"><span>TensorFlow</span><div class="meter"><i style="width:68%"></i></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-3" style="margin-top:20px;">
+            <div class="card">
+              <h3>What I’m good at</h3>
+              <ul>
+                <li>Turning problem statements into clean, testable code</li>
+                <li>Designing quick, accessible UIs without heavy frameworks</li>
+                <li>Planning detailed execution paths for reliable delivery</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>What I’m exploring</h3>
+              <ul>
+                <li>On‑device ML pipelines for computer vision</li>
+                <li>High‑quality data labeling & model monitoring</li>
+                <li>Java + ML interop (JNI/ONNX)</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Fun</h3>
+              <ul>
+                <li>Cricket and weekend mini‑projects</li>
+                <li>Writing clean documentation</li>
+                <li>Helping friends debug (yes, really)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <footer class="footer">© <span id="year"></span> Amar Venkatesh · Built with HTML/CSS/JS</footer>
+      </section>
+
+      <!-- ============================= SKILLS ============================= -->
+      <section id="skills" class="section" role="tabpanel">
+        <div class="container">
+          <div class="grid grid-2">
+            <div class="card">
+              <h2>Technical Skills</h2>
+              <div class="grid">
+                <div class="skill"><span>Java</span><div class="meter"><i style="width:88%"></i></div></div>
+                <div class="skill"><span>Python</span><div class="meter"><i style="width:85%"></i></div></div>
+                <div class="skill"><span>JavaScript</span><div class="meter"><i style="width:78%"></i></div></div>
+                <div class="skill"><span>HTML/CSS</span><div class="meter"><i style="width:90%"></i></div></div>
+                <div class="skill"><span>SQL/MySQL</span><div class="meter"><i style="width:80%"></i></div></div>
+                <div class="skill"><span>OpenCV</span><div class="meter"><i style="width:72%"></i></div></div>
+                <div class="skill"><span>TensorFlow</span><div class="meter"><i style="width:68%"></i></div></div>
+                <div class="skill"><span>Data Structures</span><div class="meter"><i style="width:82%"></i></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <h2>Soft Skills</h2>
+              <ul>
+                <li>Communication & Teamwork</li>
+                <li>Problem Solving & Time Management</li>
+                <li>Adaptability</li>
+                <li>Attention to Detail</li>
+              </ul>
+              <h3 style="margin-top:14px;">Toolbox</h3>
+              <div style="display:flex; gap:10px; flex-wrap: wrap;">
+                <span class="badge">VS Code</span>
+                <span class="badge">Git</span>
+                <span class="badge">Postman</span>
+                <span class="badge">Figma</span>
+                <span class="badge">Excel</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 16px;">
+            <h2>Highlights</h2>
+            <div class="grid grid-3">
+              <div>
+                <h3>Detail‑driven</h3>
+                <p class="muted">I catch more mistakes than most and prefer to plan thoroughly before coding.</p>
+              </div>
+              <div>
+                <h3>Stable & Reliable</h3>
+                <p class="muted">Frequent changes can be disruptive — I value consistency and clear processes.</p>
+              </div>
+              <div>
+                <h3>Resilient</h3>
+                <p class="muted">Setbacks don’t change my effort — I keep shipping.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= PROJECTS ============================= -->
+      <section id="projects" class="section" role="tabpanel">
+        <div class="container">
+          <div class="card">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap: wrap;">
+              <h2 style="margin:0">Projects</h2>
+              <div class="search" role="search">
+                <input id="projectSearch" class="input" placeholder="Search projects by tech or title (e.g., OpenCV, TensorFlow)" />
+                <button id="clearSearch" class="btn ghost" title="Clear search">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="projectGrid" class="grid grid-3" style="margin-top: 16px;">
+            <!-- Project 1 -->
+            <article class="card project" data-tags="opencv python accessibility gesture cv">
+              <div class="thumb">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=1200&q=60" alt="Hand controlled mouse demo"/>
+              </div>
+              <h3>Hand‑Controlled Mouse (OpenCV)</h3>
+              <p class="muted">Real‑time hand‑gesture mouse control to improve accessibility and interaction.</p>
+              <div class="tags">
+                <span class="badge">Python</span>
+                <span class="badge">OpenCV</span>
+                <span class="badge">Computer Vision</span>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn secondary" data-open="p1">Read More</button>
+              </div>
+            </article>
+
+            <!-- Project 2 -->
+            <article class="card project" data-tags="tensorflow opencv python accessibility nlp audio">
+              <div class="thumb">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1517519014922-8fc06f3cbf2d?auto=format&fit=crop&w=1200&q=60" alt="Speech to sign language"/>
+              </div>
+              <h3>Speech → Sign Language (TensorFlow)</h3>
+              <p class="muted">Converts audio speech to sign language animations to support the hearing‑impaired.</p>
+              <div class="tags">
+                <span class="badge">TensorFlow</span>
+                <span class="badge">OpenCV</span>
+                <span class="badge">Real‑time</span>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn secondary" data-open="p2">Read More</button>
+              </div>
+            </article>
+
+            <!-- Project 3 -->
+            <article class="card project" data-tags="opencv python proctoring monitoring dashboard cv">
+              <div class="thumb">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=1200&q=60" alt="Online exam proctoring"/>
+              </div>
+              <h3>Online Exam Proctoring (CV)</h3>
+              <p class="muted">Monitors head pose, presence, and movement to help maintain integrity in online exams.</p>
+              <div class="tags">
+                <span class="badge">Python</span>
+                <span class="badge">OpenCV</span>
+                <span class="badge">Dashboard</span>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn secondary" data-open="p3">Read More</button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= EDUCATION ============================= -->
+      <section id="education" class="section" role="tabpanel">
+        <div class="container">
+          <div class="grid grid-2">
+            <div class="card">
+              <h2>B.Tech – Computer Science & Engineering</h2>
+              <p class="muted">Kalasalingam Academy of Research and Education (KARE), Tamil Nadu · 2022 – Present</p>
+              <div class="badge">CGPA: 8.54/10</div>
+            </div>
+            <div class="card">
+              <h2>Earlier Education</h2>
+              <div class="timeline">
+                <div class="t-item">
+                  <b>Intermediate (MPC)</b> — Narayana Junior College, Guntur (2020–2022) — 945/1000
                 </div>
+                <div class="t-item">
+                  <b>SSC</b> — Good New English Medium High School, Gurazala (2019–2020) — 596/600
                 </div>
-            </main>
-        </body>
-        <script src="event.js"></script>
-    </head>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= CERTIFICATIONS ============================= -->
+      <section id="certs" class="section" role="tabpanel">
+        <div class="container">
+          <div class="card">
+            <h2>Certifications & Achievements</h2>
+            <ul>
+              <li>Computer Vision in Microsoft Azure (2024)</li>
+              <li>Oracle Certified Professional</li>
+              <li>Certified in Database Management Systems</li>
+              <li>Certified in Design & Analysis of Algorithms</li>
+              <li>Participant – Kriya Hackathon, KLN College (2025)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= CONTACT ============================= -->
+      <section id="contact" class="section" role="tabpanel">
+        <div class="container">
+          <div class="grid grid-2">
+            <div class="card">
+              <h2>Contact</h2>
+              <form id="contactForm" onsubmit="return false;" aria-label="Contact form">
+                <label> Name <input class="input" name="name" required placeholder="Jane Doe"/></label>
+                <label> Email <input class="input" type="email" name="email" required placeholder="jane@email.com"/></label>
+                <label> Message <textarea class="input" name="message" required rows="4" placeholder="Hi Amar, let's talk about…"></textarea></label>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+                  <button class="btn" id="sendBtn">Send</button>
+                  <a class="btn secondary" href="/resume1.pdf" download>Download Résumé (PDF)</a>
+                </div>
+                <p id="formStatus" class="muted" role="status" aria-live="polite" style="margin-top:8px"></p>
+              </form>
+            </div>
+            <div class="card">
+              <h2>Links</h2>
+              <ul>
+                <li>Email: <a href="mailto:amaravenkateshkongara@gmail.com">amaravenkateshkongara@gmail.com</a></li>
+                <li>Phone: +91 96528 33454</li>
+                <li>Location: Palnadu, Andhra Pradesh</li>
+                <li><a href="https://github.com/amarvenkatesh-45" target="_blank" rel="noreferrer">GitHub</a></li>
+                <li><a href="https://linkedin.com/in/amar-venkatesh-chowdary-kongara" target="_blank" rel="noreferrer">LinkedIn</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============================= MODALS ============================= -->
+  <div class="modal" id="modal-p1" aria-hidden="true" role="dialog" aria-label="Hand controlled mouse details">
+    <div class="dialog">
+      <h2>Hand‑Controlled Mouse (OpenCV)</h2>
+      <p>Built a gesture-based mouse controller for accessibility using <b>Python</b> and <b>OpenCV</b>. Pipeline includes hand detection, landmark extraction, and mapping to cursor events.</p>
+      <ul>
+        <li>Collected & preprocessed gesture data; tuned for varied lighting.</li>
+        <li>Optimized frame processing for low-latency cursor movement.</li>
+        <li>~95% gesture recognition in controlled tests.</li>
+      </ul>
+      <button class="btn" data-close>Close</button>
+    </div>
+  </div>
+  <div class="modal" id="modal-p2" aria-hidden="true" role="dialog" aria-label="Speech to sign details">
+    <div class="dialog">
+      <h2>Speech → Sign Language (TensorFlow)</h2>
+      <p>Converts audio to sign language animations using real‑time inference with <b>TensorFlow</b> and <b>OpenCV</b>. Focus on latency and clarity.</p>
+      <ul>
+        <li>Audio feature extraction, alignment with visual components.</li>
+        <li>Model quantization for faster inference.</li>
+        <li>~92% conversion accuracy on held‑out set.</li>
+      </ul>
+      <button class="btn" data-close>Close</button>
+    </div>
+  </div>
+  <div class="modal" id="modal-p3" aria-hidden="true" role="dialog" aria-label="Proctoring details">
+    <div class="dialog">
+      <h2>Online Exam Proctoring (CV)</h2>
+      <p>Monitors presence and suspicious movement to assist proctoring. Real‑time dashboard with alert thresholds.</p>
+      <ul>
+        <li>Head pose estimation, face detection, movement heuristics.</li>
+        <li>Balanced false positives with calibrated thresholds.</li>
+        <li>Python + OpenCV, modular architecture.</li>
+      </ul>
+      <button class="btn" data-close>Close</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Message sent. Thanks!</div>
+
+  <script>
+    /*
+    ============================================================================
+    BACKGROUND CANVAS PARTICLES
+    ============================================================================
+    */
+    (function particles(){
+      const c = document.getElementById('bgCanvas');
+      const ctx = c.getContext('2d');
+      const DPR = Math.max(1, window.devicePixelRatio || 1);
+      let W, H, points = [];
+      const N = 60;
+      function resize(){ W = c.width = innerWidth * DPR; H = c.height = innerHeight * DPR; c.style.width = innerWidth + 'px'; c.style.height = innerHeight + 'px'; init(); }
+      function init(){ points = Array.from({length:N}, () => ({ x: Math.random()*W, y: Math.random()*H, vx:(Math.random()-.5)*.3*DPR, vy:(Math.random()-.5)*.3*DPR })); }
+      function step(){ ctx.clearRect(0,0,W,H); ctx.globalAlpha = .6; for(const p of points){ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>W) p.vx*=-1; if(p.y<0||p.y>H) p.vy*=-1; }
+        for(let i=0;i<N;i++){ for(let j=i+1;j<N;j++){ const a=points[i], b=points[j]; const dx=a.x-b.x, dy=a.y-b.y; const d=Math.hypot(dx,dy); if(d<160*DPR){ const t = 1 - d/(160*DPR); ctx.strokeStyle = `rgba(123,200,255,${t*.35})`; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); } } }
+        for(const p of points){ ctx.fillStyle = 'rgba(124,243,197,.8)'; ctx.beginPath(); ctx.arc(p.x,p.y,2.2*DPR,0,Math.PI*2); ctx.fill(); }
+        requestAnimationFrame(step);
+      }
+      addEventListener('resize', resize, {passive:true}); resize(); step();
+    })();
+
+    /*
+    ============================================================================
+    TABS / ROUTER
+    ============================================================================
+    */
+    const tabs = document.querySelectorAll('.tab-btn');
+    const sections = document.querySelectorAll('.section');
+
+    function activate(tab){
+      tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === tab)));
+      sections.forEach(s => s.classList.toggle('active', s.id === tab));
+      // update hash for deep links
+      if(location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+      // focus first heading in section for a11y
+      const h = document.querySelector(`#${tab} h1, #${tab} h2`);
+      if(h) h.focus?.();
+    }
+
+    tabs.forEach(btn => btn.addEventListener('click', () => activate(btn.dataset.tab)));
+
+    // Deep link support
+    const initial = location.hash?.slice(1) || 'home';
+    if(document.getElementById(initial)) activate(initial);
+
+    // Keyboard shortcuts 1..6 for tabs
+    addEventListener('keydown', (e) => {
+      if (/^[1-6]$/.test(e.key)) {
+        const idx = Number(e.key) - 1; if (tabs[idx]) { tabs[idx].click(); }
+      }
+    });
+
+    /*
+    ============================================================================
+    THEME TOGGLE (persisted)
+    ============================================================================
+    */
+    const themeToggle = document.getElementById('themeToggle');
+    const setTheme = (t) => document.documentElement.setAttribute('data-theme', t);
+    const saved = localStorage.getItem('theme');
+    if (saved) setTheme(saved);
+    themeToggle.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      setTheme(cur); localStorage.setItem('theme', cur);
+    });
+
+    /*
+    ============================================================================
+    HOME quick jump
+    ============================================================================
+    */
+    document.querySelectorAll('[data-jump]').forEach(el => el.addEventListener('click', (e) => {
+      e.preventDefault(); const tab = el.getAttribute('data-jump'); activate(tab);
+    }));
+
+    /*
+    ============================================================================
+    PROJECT FILTER / SEARCH
+    ============================================================================
+    */
+    const grid = document.getElementById('projectGrid');
+    const search = document.getElementById('projectSearch');
+    const clear = document.getElementById('clearSearch');
+    function filterProjects(q){
+      const term = (q||'').trim().toLowerCase();
+      grid.querySelectorAll('.project').forEach(card => {
+        const tags = card.dataset.tags;
+        const title = card.querySelector('h3')?.textContent.toLowerCase() || '';
+        const show = !term || tags.includes(term) || title.includes(term);
+        card.style.display = show ? '' : 'none';
+      });
+    }
+    search?.addEventListener('input', (e)=> filterProjects(e.target.value));
+    clear?.addEventListener('click', ()=>{ search.value=''; filterProjects(''); search.focus(); });
+
+    /*
+    ============================================================================
+    MODALS
+    ============================================================================
+    */
+    const modals = {
+      p1: document.getElementById('modal-p1'),
+      p2: document.getElementById('modal-p2'),
+      p3: document.getElementById('modal-p3'),
+    };
+    document.querySelectorAll('[data-open]').forEach(btn => btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-open');
+      const m = modals[id]; if(!m) return; m.classList.add('open');
+    }));
+    document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', ()=>{
+      btn.closest('.modal')?.classList.remove('open');
+    }));
+    addEventListener('keydown', (e)=>{ if(e.key==='Escape') document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open')); });
+
+    /*
+    ============================================================================
+    CONTACT FORM (demo)
+    ============================================================================
+    */
+    const form = document.getElementById('contactForm');
+    const status = document.getElementById('formStatus');
+    const toast = document.getElementById('toast');
+    document.getElementById('sendBtn')?.addEventListener('click', ()=>{
+      const data = Object.fromEntries(new FormData(form).entries());
+      if(!data.name || !data.email || !data.message){ status.textContent = 'Please fill all fields.'; return; }
+      status.textContent = 'Thanks! Your message was recorded locally (demo).';
+      console.log('Contact message:', data);
+      form.reset();
+      toast.classList.add('show'); setTimeout(()=> toast.classList.remove('show'), 1800);
+    });
+
+    /*
+    ============================================================================
+    YEAR STAMP
+    ============================================================================
+    */
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+
+  <!-- SEO JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Kongara Amar Venkatesh",
+    "jobTitle": "Software Developer",
+    "address": {"@type": "PostalAddress", "addressLocality": "Palnadu", "addressRegion": "Andhra Pradesh", "addressCountry": "IN"},
+    "email": "mailto:amaravenkateshkongara@gmail.com",
+    "telephone": "+919652833454",
+    "sameAs": [
+      "https://linkedin.com/in/amar-venkatesh-chowdary-kongara",
+      "https://github.com/amarvenkatesh-45"
+    ],
+    "alumniOf": {"@type": "CollegeOrUniversity", "name": "Kalasalingam Academy of Research and Education"},
+    "knowsAbout": ["Java","Python","SQL","HTML","CSS","JavaScript","OpenCV","TensorFlow","Computer Vision","Data Structures"]
+  }
+  </script>
+</body>
 </html>
