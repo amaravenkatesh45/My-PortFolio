@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Nutrition Finder</title>
+</head>
+<body>
+    <h1>Food Nutrition Finder</h1>
+    
+    <div>
+        <h2>Search Food</h2>
+        <input type="text" id="foodQuery" placeholder="e.g., Biryani">
+        <button onclick="searchFood()">Search</button>
+        <div id="foodResults"></div>
+    </div>
+
+    <div>
+        <h2>BMI Calculator</h2>
+        <input type="number" id="height" placeholder="Height (cm)">
+        <input type="number" id="weight" placeholder="Weight (kg)">
+        <button onclick="calculateBMI()">Calculate BMI</button>
+        <div id="bmiResult"></div>
+    </div>
+
+    <script>
+        async function searchFood() {
+            const query = document.getElementById('foodQuery').value;
+            const response = await fetch(`http://127.0.0.1:5000/search?query=${query}`);
+            const data = await response.json();
+            
+            let html = "<h3>Results:</h3>";
+            if (data.error) {
+                html = `<p>${data.error}</p>`;
+            } else {
+                for (const [item, nutrition] of Object.entries(data)) {
+                    html += `<p><strong>${item}:</strong> ${JSON.stringify(nutrition)}</p>`;
+                }
+            }
+            document.getElementById('foodResults').innerHTML = html;
+        }
+
+        async function calculateBMI() {
+            const height = document.getElementById('height').value;
+            const weight = document.getElementById('weight').value;
+            const response = await fetch('http://127.0.0.1:5000/bmi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ height, weight })
+            });
+            const data = await response.json();
+            document.getElementById('bmiResult').innerHTML = `
+                <p><strong>BMI:</strong> ${data.BMI} (${data.Category})</p>
+            `;
+        }
+    </script>
+</body>
+</html>
